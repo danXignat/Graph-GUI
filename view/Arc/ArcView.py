@@ -1,53 +1,20 @@
-from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtWidgets import QGraphicsLineItem, QGraphicsItem, QGraphicsPolygonItem
-from PySide6.QtGui  import QPen, QPainterPath, QPolygonF, QBrush
+from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtGui import QPainterPath
+from PySide6.QtWidgets import QGraphicsItem
 
-from typing import List, Callable, Any
 import math
 
+from config import ARROW_SIZE
+from .Arrow import Arrow
+from .Line import Line
 
-class Arrow(QGraphicsPolygonItem):
-    def __init__(self, size: int, parent):
-        super().__init__(parent = parent)
-        
-        self.size = size
-        self.setPolygon(QPolygonF([
-            QPointF(0, 0),
-            QPointF(-size/2, size/2),          
-            QPointF(0, -size),             
-            QPointF(size/2, size/2)   
-        ]))
-        
-        brush = QBrush(Qt.GlobalColor.blue)
-        self.setBrush(brush)
-
-        pen = QPen(Qt.GlobalColor.blue)
-        self.setPen(pen)
-        
-    def getArrowPoint(self):
-        return self.mapToScene(self.boundingRect().center() - QPointF(0, self.size))
-    
-class Line(QGraphicsLineItem):
+class ArcView(QGraphicsItem):
     def __init__(self, start_point: QPointF, end_point: QPointF, parent):
-        super().__init__(
-            start_point.x(), start_point.y(),
-            end_point.x(), end_point.y(),
-            parent = parent
-        )
-
-        pen = QPen(Qt.GlobalColor.blue)
-        pen.setWidth(8)
-        self.setPen(pen)
-
-class Arc(QGraphicsItem):
-    def __init__(self, start_point: QPointF, end_point: QPointF):
-        from models import Edge
+        super().__init__(parent=parent)
         
-        super().__init__()
         self.setZValue(0)
-        self.size = 40
-        self.edge = Edge()
-        self.line = Line(start_point, end_point, parent = self)
+        self.size = ARROW_SIZE
+        self.line  = Line(start_point, end_point, parent = self)
         self.arrow = Arrow(self.size, parent=self)
         self.updateArrowPos()
     
