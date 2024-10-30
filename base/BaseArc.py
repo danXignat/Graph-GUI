@@ -1,18 +1,19 @@
 from dataclasses import dataclass, field
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any
 
 from uuid import UUID, uuid4
 
-from .BaseNode import BaseNode
-
 @dataclass
 class BaseArc:
-    begin: BaseNode
-    end: BaseNode
+    begin: Any
+    end: Any
     
     @property
-    def pair(self) -> Tuple[BaseNode, BaseNode]:
+    def pair(self) -> Tuple[Any, Any]:
         return (self.begin, self.end)
     
+    def __repr__(self):
+        return f"A({self.begin}, {self.end})"
+
     def __hash__(self):
         return hash(self.begin) ^ hash(self.end)

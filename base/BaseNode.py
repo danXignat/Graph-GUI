@@ -3,9 +3,9 @@ from typing import Optional
 
 from uuid import UUID, uuid4
 
+@dataclass
 class BaseNode:
-    def __init__(self, label: str):
-        self._label = label
+    label: str
 
     @property
     def label(self):
@@ -20,3 +20,12 @@ class BaseNode:
     
     def __hash__(self):
         return hash(self._label)
+
+class BaseNodeFactory:
+    _instances = {}
+
+    @classmethod
+    def get_node(cls, identifier):
+        if identifier not in cls._instances:
+            cls._instances[identifier] = BaseNode(identifier)
+        return cls._instances[identifier]

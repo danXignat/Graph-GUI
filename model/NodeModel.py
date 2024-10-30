@@ -2,19 +2,10 @@ from PySide6.QtCore import QObject, Property, QPointF, Signal
 
 from base import BaseNode
 
-class NodeModel(QObject):
-    def __init__(self, node_data: BaseNode, pos: QPointF):
-        super().__init__()
-        self._node_data = node_data
+class NodeModel(BaseNode, QObject):
+    def __init__(self, label: str, pos: QPointF):
+        super().__init__(label=label)
         self._pos: QPointF = pos
-
-    @property
-    def label(self):
-        return self._node_data.label
-    
-    @label.setter
-    def label(self, label: str):
-        self._node_data.label = label
     
     @property
     def pos(self):

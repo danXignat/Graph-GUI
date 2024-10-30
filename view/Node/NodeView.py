@@ -1,27 +1,29 @@
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QPainter, QPainterPath
-from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsSceneMouseEvent
+from PySide6.QtGui import QPainter, QPainterPath, QCursor
+from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsSceneMouseEvent, QGraphicsSceneHoverEvent
 
 from config import NODE_RADIUS
-from viewmodel import GraphViewModel
+# from viewmodel import GraphViewModel
+from viewmodel import NodeViewModel
 from .Circle import Circle
 from .Text import Text
 
 class NodeView(QGraphicsItem):
-    def __init__(self, viewmodel: GraphViewModel):
+    def __init__(self, viewmodel: NodeViewModel):
         super().__init__()
         self.viewmodel = viewmodel
         self.circle = Circle(NODE_RADIUS, parent=self)
-        self.text = Text(self.viewmodel.label, parent=self)
+        self.text = Text(viewmodel.model.label, parent=self)
         self.text.center(self.circle)
-        self.is_moving = False
         
-        self.setPos(self.viewmodel.model.pos)
+        self.is_moving = False
+        self.setPos(viewmodel.model.pos)
         
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
+        self.setAcceptHoverEvents(True)
         self.setFlag(QGraphicsItem.ItemIsMovable)
         
-    #--------------------OBJECT--------------------------------   
+    #---------------------------------OBJECT-------------------------------------   
     
     def paint(self, painter: QPainter, option, widget=None):
         pass
@@ -34,7 +36,7 @@ class NodeView(QGraphicsItem):
         path.addEllipse(self.boundingRect())
         return path
     
-    #--------------------INPUT------------------------  
+    #-----------------------------------INPUT-------------------------------------
     
     def mousePressEvent(self, event):
         leftClickPressed: bool = event.button() == Qt.MouseButton.LeftButton
@@ -42,16 +44,28 @@ class NodeView(QGraphicsItem):
         
         if leftClickPressed:
             self.is_moving = True
+            self.viewmodel.handle_closed_hand_cursor()
             
         elif rightClickPressed: 
-            self.viewmodel.handle_add_arc(self.viewmodel.model)
+            # self.viewmodel.handle_add_arc(self.viewmodel.model)
+            pass
         
         return super().mousePressEvent(event)   
-    
+
+    def mouseDoubleClickEvent(self, event):
+        rightClickPressed : bool = event.button() == Qt.MouseButton.RightButton
+
+        if rightClickPressed:
+            self.scene().removeItem(self)
+            self.viewmodel.handle_deletion()
+            del self
+        else:
+            return super().mouseDoubleClickEvent(event)
+
     def mouseMoveEvent(self, event):
         if not self.is_moving:
             return super().mouseMoveEvent(event)
-        
+
         displacement = event.scenePos() - event.lastScenePos()
         new_pos = self.pos() + displacement
         
@@ -75,5 +89,16 @@ class NodeView(QGraphicsItem):
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if self.is_moving:
             self.is_moving = False
+            self.viewmodel.handle_restore_cursor()
         
         return super().mouseReleaseEvent(event)
+    
+    #-------------------------------Hover------------------------------------
+
+    def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
+        self.viewmodel.handle_open_hand_cursor()
+        return super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
+        self.viewmodel.handle_restore_cursor()
+        return super().hoverEnterEvent(event)

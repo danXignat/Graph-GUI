@@ -1,23 +1,22 @@
 from dataclasses import dataclass, field
-from typing import Set, Dict, List
-
-from .BaseArc import BaseArc
-from .BaseNode import BaseNode
-
+from typing import Set, Dict, List, TypeVar, Union, Any
 from uuid import UUID
 
+from interface import GraphInterface
+
+
 @dataclass
-class BaseGraph:
-    nodes: Set[BaseNode] = field(default_factory = set)
-    arc:   Set[BaseArc] = field(default_factory = set)
+class BaseGraph(GraphInterface):
+    nodes: Set[Any] = field(default_factory = set)
+    arc:   Set[Any] = field(default_factory = set)
     
-    adjacency_list: Dict[BaseNode, List[BaseNode]] = field(default_factory = dict)
+    adjacency_list: Dict[Any, List[Any]] = field(default_factory = dict)
     
-    def add_node(self, node: BaseNode):
+    def add_node(self, node: Any):
         self.nodes.add(node)
         self.adjacency_list[node] = list()
         
-    def add_arc(self, arc: BaseArc):
+    def add_arc(self, arc: Any):
         self.arc.add(arc)
 
         begin_exist: bool = arc.begin in self.nodes
@@ -25,7 +24,19 @@ class BaseGraph:
         
         if begin_exist and end_exists:
             self.adjacency_list[arc.begin].append(arc.end)
-            
+
+    def remove_node(self):
+        pass
+    
+    def remove_arc(self):
+        pass
+
+    def dfs(self):
+        pass
+
+    def bfs(self):
+        pass
+
     def __repr__(self):
         graph_str: str = ""
         for key, ls in self.adjacency_list.items():
@@ -34,18 +45,7 @@ class BaseGraph:
             
         return graph_str
 
-# nodes = [BaseNode("1"), BaseNode("2"), BaseNode("3"), BaseNode("4")]
-# arcs = [BaseArc(nodes[0], nodes[1]), BaseArc(nodes[0], nodes[2]),
-#         BaseArc(nodes[0], nodes[3]), BaseArc(nodes[2], nodes[3])]
 
-# graph = BaseGraph()
-
-# for node in nodes:
-#     graph.add_node(node)
-# for arc in arcs:
-#     graph.add_arc(arc)
-
-# print(graph)
                 
     
     
