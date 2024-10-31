@@ -36,20 +36,7 @@ class ArcView(QGraphicsItem):
 
     #--------------------------------Input-------------------------------------
     
-    def mouseMoveEvent(self, event):
-        print("miau")
-        if self.viewmodel.setting:
-            end_point = self.mapToScene(event.pos())
-        
-            self.setEndPoint(end_point)
-        
-        return super().mouseMoveEvent(event)
-    
-    def mouseReleaseEvent(self, event):
-        if self.viewmodel.setting:
-            self.viewmodel.setting = False
-        
-        return super().mouseReleaseEvent(event)
+ 
     
     #------------------------------Methods-------------------------------------
 
@@ -77,12 +64,10 @@ class ArcView(QGraphicsItem):
         
         self.updateArrowPos()
         
-    def fixArc(self):
+    def fixArc(self, end_node):
         """algad to win"""
-        other_node = self.edge.end_node
-        
         center1 = self.line.line().p1()                                         #first node center
-        center2 = other_node.mapToScene(other_node.boundingRect().center())     #second node center
+        center2 = end_node.mapToScene(end_node.boundingRect().center())     #second node center
         
         fixed_point = geometry.intersectionPoint(center1, center2, NODE_RADIUS, ARROW_SIZE)
 

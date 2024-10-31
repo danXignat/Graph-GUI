@@ -19,3 +19,11 @@ class GraphModel(BaseGraph, QObject, metaclass = CommonMeta):
     def delete_node_db(self, node: NodeModel):
         self.delete_node(node)
         print(f"[DELETED] {node}")
+
+    def add_arc_db(self, arc: ArcModel):
+        if self.add_arc(arc):
+            print(f"[ADDED] {arc}")
+            return True
+        else:
+            print(f"[ADDED] {arc} --FAIL")
+            return False

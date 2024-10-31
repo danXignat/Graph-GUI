@@ -1,5 +1,5 @@
 from PySide6.QtCore import QObject, QPointF, Signal, Slot
-from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent, Qt
+from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QMouseEvent
 from typing import List
 
@@ -36,21 +36,21 @@ class GraphViewModel(QObject):
         self.model.add_node_db(node_model)
         self.added_node.emit(node_view)
 
-    def handle_creating_arc(self, position: QPointF, button: Qt.MouseButton, modifiers: Qt.KeyboardModifiers):
-        arc_model     = ArcModel(None, None)
+    def handle_creating_arc(self, position: QPointF, start_node: NodeView):
+        arc_model     = ArcModel(start_node.viewmodel.model, None)
         arc_viewmodel = ArcViewModel(arc_model)
         arc_view      = ArcView(position, arc_viewmodel)
+        start_node.connected_arcs.add(arc_view)
         self.added_arc.emit(arc_view)
-        
-        scene_event = QGraphicsSceneMouseEvent(QGraphicsSceneMouseEvent.GraphicsSceneMouseMove)
-        scene_event.setScenePos(position)
-        scene_event.setButton(button)
-        scene_event.setModifiers(modifiers)
-        
-        arc_view.mouseMoveEvent(scene_event)
     
-    def handle_add_arc(self, start_pos: QPointF):
-       pass
+    def handle_add_arc(self, arc: ArcView, end_node: NodeView):
+        arc_model =  arc.viewmodel.model 
+        arc_model.end = end_node.viewmodel.model
+
+        if self.model.add_arc_db(arc):
+            end_node.connected_arcs.add(arc)
+        else:
+            end_node.connected_arcs.remove(arc)
     
     def handle_print_graph(self):
         print(self.model.__repr__())

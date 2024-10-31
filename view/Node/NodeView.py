@@ -20,9 +20,12 @@ class NodeView(QGraphicsItem):
         self.is_moving = False
         self.setPos(viewmodel.model.pos)
         
+        self.setZValue(1)
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
         self.setAcceptHoverEvents(True)
         self.setFlag(QGraphicsItem.ItemIsMovable)
+
+        self.connected_arcs = set()
         
     #---------------------------------OBJECT-------------------------------------   
     

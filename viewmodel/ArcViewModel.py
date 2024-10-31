@@ -7,5 +7,4 @@ class ArcViewModel(QObject):
         super().__init__()
         self.model = model
         self.setting: bool = True
-    
         

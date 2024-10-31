@@ -8,7 +8,7 @@ from interface import GraphInterface
 @dataclass
 class BaseGraph(GraphInterface):
     nodes: Set[Any] = field(default_factory = set)
-    arc:   Set[Any] = field(default_factory = set)
+    arcs:   Set[Any] = field(default_factory = set)
     
     adjacency_list: Dict[Any, Set[Any]] = field(default_factory = dict)
     
@@ -17,14 +17,20 @@ class BaseGraph(GraphInterface):
         self.adjacency_list[node] = set()
         
     def add_arc(self, arc: Any):
-        self.arc.add(arc)
-
         begin_exist: bool = arc.begin in self.nodes
         end_exists: bool = arc.end in self.nodes
         
-        if begin_exist and end_exists:
-            self.adjacency_list[arc.begin].add(arc.end)
+        if arc in self.arcs:
+            return False
+        
+        if not(begin_exist and end_exists):
+            return False
+        
+        self.arcs.add(arc)
+        self.adjacency_list[arc.begin].add(arc.end)
 
+        return True
+    
     def delete_node(self, node: Any):
         self.nodes.remove(node)
         self.adjacency_list.pop(node)

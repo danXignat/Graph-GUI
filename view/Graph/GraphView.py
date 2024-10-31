@@ -25,7 +25,9 @@ class GraphView(QGraphicsView):
         self.viewmodel.added_node.connect(self.on_node_added)
         self.viewmodel.added_arc.connect(self.on_arc_added)
 
-    #-------------------------------Slots---------------------------------
+        self.arc_dragging_buffer = None
+
+    #------------------------------------SLOTS----------------------------------------
 
     @Slot(NodeView)
     def on_node_added(self, node_view: NodeView):
@@ -33,9 +35,10 @@ class GraphView(QGraphicsView):
     
     @Slot(ArcView)
     def on_arc_added(self, arc_view: ArcView):
+        self.arc_dragging_buffer = arc_view
         self.scene().addItem(arc_view)
     
-    #----------------------------------MOUSE-EVENTS---------------------------------------
+    #----------------------------------MOUSE-EVENTS-----------------------------------
 
     def mousePressEvent(self, event):
         leftClickPressed: bool = event.button() == Qt.MouseButton.LeftButton
@@ -48,28 +51,28 @@ class GraphView(QGraphicsView):
             
         elif rightClickPressed:
             node = self.getNode(event.position().toPoint())
-            
-            if node == None:
-                return super().mousePressEvent(event)
-            
-            start_point = node.mapToScene(node.boundingRect().center())
-            self.viewmodel.handle_creating_arc(event)
-            
+
+            if node and self.arc_dragging_buffer == None:
+                start_point = node.mapToScene(node.boundingRect().center())
+                self.viewmodel.handle_creating_arc(start_point, node)
+
+            elif node and self.arc_dragging_buffer:
+                self.viewmodel.handle_add_arc(self.arc_dragging_buffer, node)
+                self.arc_dragging_buffer.fixArc(node)
+                self.arc_dragging_buffer = None
+
+            elif node == None and self.arc_dragging_buffer:
+                self.arc_dragging_buffer = None
+
         super().mousePressEvent(event)
     
     def mouseMoveEvent(self, event):
-        # if self.viewmodel.setting_arc:
-        #     node = self.getNode(event.position().toPoint())
-            
-        #     if node == None:
-        #         return super().mousePressEvent(event)
-            
-        #     start_point = node.mapToScene(node.boundingRect().center())
-        #     self.viewmodel.handle_creating_arc(start_point, event)
+        if self.arc_dragging_buffer:
+            self.arc_dragging_buffer.setEndPoint(event.position())
             
         return super().mouseMoveEvent(event)
     
-    #------------------------------------KEYBOARD-EVENTS---------------------------------
+    #------------------------------KEYBOARD-EVENTS---------------------------------
 
     def keyPressEvent(self, event):
         key = str.lower(chr(event.key()))
@@ -80,7 +83,7 @@ class GraphView(QGraphicsView):
 
         return super().keyPressEvent(event)
 
-    #----------------------------------Methods-----------------------------------------
+    #----------------------------------METHODS-----------------------------------------
 
     def getNode(self, pos: QPointF):
         item = self.itemAt(pos)
