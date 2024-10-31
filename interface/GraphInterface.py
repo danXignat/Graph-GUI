@@ -11,11 +11,11 @@ class GraphInterface(ABC):
         pass
 
     @abstractmethod
-    def remove_node(self):
+    def delete_node(self):
         pass
 
     @abstractmethod
-    def remove_arc(self):
+    def delete_arc(self):
         pass
 
     @abstractmethod

@@ -1,5 +1,5 @@
 NODE_RADIUS = 20
-ARROW_SIZE = 10
+ARROW_SIZE = 20
 
 WINDOW_ICON_PATH = "static/graph_icon.png"
 WINDOW_TITLE = "Graph GUI"

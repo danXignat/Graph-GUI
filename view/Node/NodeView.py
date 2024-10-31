@@ -12,6 +12,7 @@ class NodeView(QGraphicsItem):
     def __init__(self, viewmodel: NodeViewModel):
         super().__init__()
         self.viewmodel = viewmodel
+        self.radius = NODE_RADIUS
         self.circle = Circle(NODE_RADIUS, parent=self)
         self.text = Text(viewmodel.model.label, parent=self)
         self.text.center(self.circle)
@@ -45,10 +46,6 @@ class NodeView(QGraphicsItem):
         if leftClickPressed:
             self.is_moving = True
             self.viewmodel.handle_closed_hand_cursor()
-            
-        elif rightClickPressed: 
-            # self.viewmodel.handle_add_arc(self.viewmodel.model)
-            pass
         
         return super().mousePressEvent(event)   
 
@@ -58,6 +55,7 @@ class NodeView(QGraphicsItem):
         if rightClickPressed:
             self.scene().removeItem(self)
             self.viewmodel.handle_deletion()
+            self.viewmodel.handle_restore_cursor()
             del self
         else:
             return super().mouseDoubleClickEvent(event)

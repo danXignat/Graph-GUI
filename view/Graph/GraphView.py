@@ -1,13 +1,12 @@
-from PySide6.QtCore import QPointF, QTimer, Qt, Slot
+from PySide6.QtCore import QPointF, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QPainter
-from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsScene, QGraphicsView
-from shiboken6 import isValid
-
+from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsScene, QGraphicsView, QGraphicsSceneMouseEvent
 
 from config import WINDOW_HEIGHT, WINDOW_WIDTH, NODE_RADIUS
 
 from viewmodel import GraphViewModel
 from view import NodeView, ArcView
+import viewmodel
 
 class GraphView(QGraphicsView):
     def __init__(self, viewmodel: GraphViewModel, parent):
@@ -40,13 +39,35 @@ class GraphView(QGraphicsView):
 
     def mousePressEvent(self, event):
         leftClickPressed: bool = event.button() == Qt.MouseButton.LeftButton
+        rightClickPressed: bool = event.button() == Qt.MouseButton.RightButton
         validPos: bool = self._isValidNodePos(event.position())
         node = self.getNode(event.pos())
         
         if leftClickPressed and node == None and validPos:
             self.viewmodel.handle_add_node(event.position())
             
+        elif rightClickPressed:
+            node = self.getNode(event.position().toPoint())
+            
+            if node == None:
+                return super().mousePressEvent(event)
+            
+            start_point = node.mapToScene(node.boundingRect().center())
+            self.viewmodel.handle_creating_arc(event)
+            
         super().mousePressEvent(event)
+    
+    def mouseMoveEvent(self, event):
+        # if self.viewmodel.setting_arc:
+        #     node = self.getNode(event.position().toPoint())
+            
+        #     if node == None:
+        #         return super().mousePressEvent(event)
+            
+        #     start_point = node.mapToScene(node.boundingRect().center())
+        #     self.viewmodel.handle_creating_arc(start_point, event)
+            
+        return super().mouseMoveEvent(event)
     
     #------------------------------------KEYBOARD-EVENTS---------------------------------
 

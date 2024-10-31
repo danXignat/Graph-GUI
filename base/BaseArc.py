@@ -12,6 +12,9 @@ class BaseArc:
     def pair(self) -> Tuple[Any, Any]:
         return (self.begin, self.end)
     
+    def isEmpty(self) -> bool:
+        return self.begin == None and self.end == None
+    
     def __repr__(self):
         return f"A({self.begin}, {self.end})"
 
