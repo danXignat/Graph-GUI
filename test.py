@@ -32,6 +32,31 @@ class PersonViewModel(QObject):
             self._person.name = value
             self.nameChanged.emit(value)
 
+# class MovableItem(widg.QGraphicsItem):
+#     def __init__(self, shape_type):
+#         super().__init__()
+#         self.shape_type = shape_type
+#         self.setFlag(widg.QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
+#         self.setAcceptHoverEvents(True)
+
+#     def boundingRect(self):
+#         return core.QRectF(-50, -50, 100, 100)
+
+#     def paint(self, painter, option, widget):
+#         if self.shape_type == "circle":
+#             painter.setBrush(gui.QBrush(gui.QColor("red")))
+#             painter.drawEllipse(-40, -40, 80, 80)
+#         elif self.shape_type == "rectangle":
+#             painter.setBrush(gui.QBrush(gui.QColor("blue")))
+#             painter.drawRect(-40, -40, 80, 80)
+#         elif self.shape_type == "triangle":
+#             painter.setBrush(gui.QBrush(gui.QColor("green")))
+#             points = [
+#                 core.QPointF(-40, 40),
+#                 core.QPointF(40, 40),
+#                 core.QPointF(0, -40)
+#             ]
+#             painter.drawPolygon(points)
 
 # view.py
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit

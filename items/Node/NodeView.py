@@ -1,24 +1,23 @@
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import QRectF, Qt, QPointF
 from PySide6.QtGui import QPainter, QPainterPath, QCursor
 from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsSceneMouseEvent, QGraphicsSceneHoverEvent
 
 from config import NODE_RADIUS
 # from viewmodel import GraphViewModel
-from viewmodel import NodeViewModel
+# from viewmodel import NodeViewModel
 from .Circle import Circle
 from .Text import Text
 
 class NodeView(QGraphicsItem):
-    def __init__(self, viewmodel: NodeViewModel):
+    def __init__(self, label: str):
         super().__init__()
-        self.viewmodel = viewmodel
         self.radius = NODE_RADIUS
-        self.circle = Circle(NODE_RADIUS, parent=self)
-        self.text = Text(viewmodel.model.label, parent=self)
-        self.text.center(self.circle)
+        circle = Circle(NODE_RADIUS, parent=self)
+        text = Text(label, parent=self)
+        text.center(circle)
         
         self.is_moving = False
-        self.setPos(viewmodel.model.pos)
+        self.setPos(QPointF(0, 0))
         
         self.setZValue(1)
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -48,7 +47,6 @@ class NodeView(QGraphicsItem):
         
         if leftClickPressed:
             self.is_moving = True
-            self.viewmodel.handle_closed_hand_cursor()
         
         return super().mousePressEvent(event)   
 
@@ -64,9 +62,35 @@ class NodeView(QGraphicsItem):
             return super().mouseDoubleClickEvent(event)
 
     def mouseMoveEvent(self, event):
-        if not self.is_moving:
-            return super().mouseMoveEvent(event)
+        if self.is_moving:
+            self._collisionEvent(event)
 
+            self._updateArc()
+
+        return super().mouseMoveEvent(event)
+
+        
+            
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        if self.is_moving:
+            self.is_moving = False
+            self.viewmodel.handle_restore_cursor()
+        
+        return super().mouseReleaseEvent(event)
+    
+    #-------------------------------Hover------------------------------------
+
+    def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
+        # self.viewmodel.handle_open_hand_cursor()
+        return super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
+        # self.viewmodel.handle_restore_cursor()
+        return super().hoverEnterEvent(event)
+    
+    #----------------------------------Methods-----------------------------------
+
+    def _collisionEvent(self, event):
         displacement = event.scenePos() - event.lastScenePos()
         new_pos = self.pos() + displacement
         
@@ -86,20 +110,9 @@ class NodeView(QGraphicsItem):
         if not colliding_items:
             self.setPos(new_pos)
             self.is_moving = True
-            
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-        if self.is_moving:
-            self.is_moving = False
-            self.viewmodel.handle_restore_cursor()
-        
-        return super().mouseReleaseEvent(event)
+
+    def _updateArc(self):
+        for arc in self.connected_arcs:
+            arc.update()
+
     
-    #-------------------------------Hover------------------------------------
-
-    def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        self.viewmodel.handle_open_hand_cursor()
-        return super().hoverEnterEvent(event)
-
-    def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        self.viewmodel.handle_restore_cursor()
-        return super().hoverEnterEvent(event)

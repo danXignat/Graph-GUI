@@ -19,7 +19,8 @@ class ArcView(QGraphicsItem):
         self.viewmodel = viewmodel
         self.line  = Line(start_point, start_point, parent = self)
         self.arrow = Arrow(self.size, parent=self)
-        
+        self.nodes = {"start" : None, "end" : None}
+
         self.updateArrowPos()
         self.setZValue(0)
     
@@ -75,3 +76,7 @@ class ArcView(QGraphicsItem):
     
     def getArrowPoint(self):
         return self.arrow.getArrowPoint()
+    
+    def update(self):
+        self.setStartPoint(self.nodes["start"].scenePos())
+        self.fixArc(self.nodes["end"])
