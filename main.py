@@ -47,7 +47,7 @@ import config as conf
 import sys
 
 from UI.ConsoleMenu import *
-from view.GraphView import *
+from graph import *
 
 class MainWindow(widg.QMainWindow):
     def __init__(self):
@@ -56,25 +56,18 @@ class MainWindow(widg.QMainWindow):
         self.setWindowIcon(gui.QIcon(conf.WINDOW_ICON_PATH))
         self.resize(conf.WINDOW_WIDTH, conf.WINDOW_HEIGHT)
         
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #1e1e1e;
-            }
-        """)
-
+        self.setStyleSheet("QMainWindow {background-color: #1e1e1e;}")
+        
         main_widget = widg.QWidget()
         self.setCentralWidget(main_widget)
         layout = widg.QHBoxLayout(main_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
 
         self.stack = widg.QStackedWidget()
-        self.pages = [
-            GraphView(is_directed=False),
-            GraphView(is_directed=True),
-        ]
+        self.__init_controllers()
         
-        for view in self.pages:
+        for view in self.views:
             self.stack.addWidget(view)
 
         layout.addWidget(self.stack)
@@ -84,17 +77,30 @@ class MainWindow(widg.QMainWindow):
         self.console.page_combo.currentIndexChanged.connect(self.change_page)
         self.console.page_combo.currentIndexChanged.connect(self.console.update_visible_fields)
         layout.addWidget(self.console)
+        
 
     def change_page(self, index):
         self.stack.setCurrentIndex(index)
 
     def keyPressEvent(self, event: gui.QKeyEvent):
-        # Check if the Esc key is pressed
         if event.key() == core.Qt.Key_Escape:
-            self.close()  # Close the window
+            self.close()
 
-        # Call the base class method to ensure normal behavior
         super().keyPressEvent(event)
+        
+    def __init_controllers(self):
+        self.models = [
+            GraphModel(),
+            GraphModel()
+        ]
+        
+        self.views = [
+            GraphView(is_directed=False),
+            GraphView(is_directed=True),
+        ]
+        
+        self.controllers = [GraphController(model, view) for model, view in zip(self.models, self.views)]
+        
 
 if __name__ == '__main__':
     app = widg.QApplication(sys.argv)

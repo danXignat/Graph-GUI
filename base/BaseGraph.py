@@ -2,11 +2,8 @@ from dataclasses import dataclass, field
 from typing import Set, Dict, List, TypeVar, Union, Any
 from uuid import UUID
 
-from interface import GraphInterface
-
-
 @dataclass
-class BaseGraph(GraphInterface):
+class BaseGraph:
     nodes: Set[Any] = field(default_factory = set)
     arcs:   Set[Any] = field(default_factory = set)
     

@@ -1,118 +1,126 @@
-from PySide6.QtCore import QRectF, Qt, QPointF
-from PySide6.QtGui import QPainter, QPainterPath, QCursor
-from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsItem, QGraphicsSceneMouseEvent, QGraphicsSceneHoverEvent
+from typing import Optional, Set
+
+import PySide6.QtCore as core
+import PySide6.QtGui as gui
+import PySide6.QtWidgets as widg
 
 from config import NODE_RADIUS
-# from viewmodel import GraphViewModel
-# from viewmodel import NodeViewModel
-from .Circle import Circle
-from .Text import Text
 
-class NodeView(QGraphicsItem):
+class NodeView(core.QObject, widg.QGraphicsItem):
+    node_moving = core.Signal()
+    node_deleted = core.Signal(str)
+    
     def __init__(self, label: str):
-        super().__init__()
-        self.radius = NODE_RADIUS
-        circle = Circle(NODE_RADIUS, parent=self)
-        text = Text(label, parent=self)
-        text.center(circle)
+        """Initialize a new NodeView."""
+        core.QObject.__init__(self)
+        widg.QGraphicsItem.__init__(self)
         
-        self.is_moving = False
-        self.setPos(QPointF(0, 0))
+        self.radius: float = NODE_RADIUS
+        self.label: str = label
+        self.is_moving: bool = False
         
+        self._setup_visuals()
+        self._setup_interaction_flags()
+    
+    def _setup_visuals(self) -> None:
+        self.setPos(core.QPointF(0, 0))
         self.setZValue(1)
-        self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
-        self.setAcceptHoverEvents(True)
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-
-        self.connected_arcs = set()
+        self.setCacheMode(widg.QGraphicsItem.DeviceCoordinateCache)
         
-    #---------------------------------OBJECT-------------------------------------   
+    def _setup_interaction_flags(self) -> None:
+        """Set up the interaction flags for the node."""
+        self.setAcceptHoverEvents(True)
+        self.setFlag(widg.QGraphicsItem.ItemIsMovable)
+        self.setFlag(widg.QGraphicsItem.ItemSendsGeometryChanges)
+        self.setFlag(widg.QGraphicsItem.ItemIsSelectable)
+        
+    def paint(self, painter: gui.QPainter, option, widget=None) -> None:
+        """Paint the circle and the text with an inward border."""
+        # Define pen width
+        pen_width = 3
+
+        bounding_rect = self.boundingRect()
+        inward_rect = bounding_rect.adjusted(pen_width / 2, pen_width / 2, -pen_width / 2, -pen_width / 2)
+
+        painter.setBrush(gui.QBrush(core.Qt.blue))
+        painter.setPen(gui.QPen(core.Qt.white, 3))
+        painter.drawEllipse(inward_rect)
+
+        font = painter.font()
+        font.setFamily("Times New Roman")  # Set the font family
+        font.setPointSize(22)  # Set the font size (adjust as needed)
+        font.setBold(True)  # Make the text bold
+        painter.setFont(font)  # Apply the font to the painter
+
+        painter.setPen(core.Qt.white)  # Set text color
+        painter.drawText(
+            bounding_rect,
+            core.Qt.AlignCenter,
+            str(self.label)
+        )
     
-    def paint(self, painter: QPainter, option, widget=None):
-        pass
+    def boundingRect(self) -> core.QRectF:
+        """Define the bounding rectangle for the item."""
+        diameter = self.radius * 2
+        return core.QRectF(
+            -self.radius,
+            -self.radius,
+            diameter,
+            diameter,
+        )
     
-    def boundingRect(self) -> QRectF:
-        return self.circle.boundingRect()
-    
-    def shape(self):
-        path = QPainterPath()
+    def shape(self) -> gui.QPainterPath:
+        path = gui.QPainterPath()
         path.addEllipse(self.boundingRect())
         return path
-    
-    #-----------------------------------INPUT-------------------------------------
-    
-    def mousePressEvent(self, event):
-        leftClickPressed: bool = event.button() == Qt.MouseButton.LeftButton
-        rightClickPressed: bool = event.button() == Qt.MouseButton.RightButton
-        
-        if leftClickPressed:
+
+    def mousePressEvent(self, event: widg.QGraphicsSceneMouseEvent) -> None:
+        """Handle mouse press events."""
+        if event.button() == core.Qt.MouseButton.LeftButton:
             self.is_moving = True
+            self.setCursor(core.Qt.ClosedHandCursor)
+        elif event.button() == core.Qt.MouseButton.MiddleButton:
+            self._handle_deletion()
         
-        return super().mousePressEvent(event)   
+        self.setScale(1.25)
+        self.setZValue(10)
+        super().mousePressEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
-        rightClickPressed : bool = event.button() == Qt.MouseButton.RightButton
-
-        if rightClickPressed:
-            self.scene().removeItem(self)
-            self.viewmodel.handle_deletion()
-            self.viewmodel.handle_restore_cursor()
-            del self
-        else:
-            return super().mouseDoubleClickEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if self.is_moving:
-            self._collisionEvent(event)
-
-            self._updateArc()
-
-        return super().mouseMoveEvent(event)
-
-        
-            
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: widg.QGraphicsSceneMouseEvent) -> None:
+        """Handle mouse release events."""
         if self.is_moving:
             self.is_moving = False
-            self.viewmodel.handle_restore_cursor()
+            self.unsetCursor()
+            
+        self.setScale(1)
+        self.setZValue(1)
+        super().mouseReleaseEvent(event)
+
+    def mouseMoveEvent(self, event: widg.QGraphicsSceneMouseEvent) -> None:
+        """Handle mouse move events."""
+        self.node_moving.emit()
         
-        return super().mouseReleaseEvent(event)
-    
-    #-------------------------------Hover------------------------------------
+        super().mouseMoveEvent(event)
 
-    def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        # self.viewmodel.handle_open_hand_cursor()
-        return super().hoverEnterEvent(event)
+    def mouseDoubleClickEvent(self, event: widg.QGraphicsSceneMouseEvent) -> None:
+        """Handle double-click events."""
+        if event.button() == core.Qt.MouseButton.RightButton:
+            pass
+        else:
+            super().mouseDoubleClickEvent(event)
 
-    def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        # self.viewmodel.handle_restore_cursor()
-        return super().hoverEnterEvent(event)
-    
-    #----------------------------------Methods-----------------------------------
+    def hoverEnterEvent(self, event: widg.QGraphicsSceneHoverEvent) -> None:
+        """Handle mouse hover enter events."""
+        if not self.is_moving:
+            self.setCursor(core.Qt.OpenHandCursor)
+        super().hoverEnterEvent(event)
 
-    def _collisionEvent(self, event):
-        displacement = event.scenePos() - event.lastScenePos()
-        new_pos = self.pos() + displacement
-        
-        temp_circle = QGraphicsEllipseItem(self.boundingRect())
-        temp_circle.setPos(new_pos)
-        temp_circle.setVisible(False)
+    def hoverLeaveEvent(self, event: widg.QGraphicsSceneHoverEvent) -> None:
+        """Handle mouse hover leave events."""
+        if not self.is_moving:
+            self.unsetCursor()
+        super().hoverLeaveEvent(event)
 
-        self.scene().addItem(temp_circle)
-        colliding_items = [
-            item for item in temp_circle.collidingItems()
-            if isinstance(item, NodeView) and item != self
-        ]
-
-        self.scene().removeItem(temp_circle)
-        del temp_circle
-
-        if not colliding_items:
-            self.setPos(new_pos)
-            self.is_moving = True
-
-    def _updateArc(self):
-        for arc in self.connected_arcs:
-            arc.update()
-
-    
+    def _handle_deletion(self) -> None:
+        """Handle the deletion of this node."""
+        self.node_deleted.emit(self.label)

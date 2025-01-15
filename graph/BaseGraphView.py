@@ -5,8 +5,8 @@ import PySide6.QtGui as gui
 class BaseGraphView(widg.QGraphicsView):
     def __init__(self):
         super().__init__()
-        scene = widg.QGraphicsScene(self)
-        self.setScene(scene)
+        self.scene = widg.QGraphicsScene(self)
+        self.setScene(self.scene)
         self.setRenderHint(gui.QPainter.RenderHint.Antialiasing)
         
         self.setViewportUpdateMode(widg.QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
@@ -16,8 +16,8 @@ class BaseGraphView(widg.QGraphicsView):
         
         self.setMouseTracking(True)
         
-        size = 1_000_000
-        self.setSceneRect(-size / 2, -size / 2, size, size)
+        size = 10000
+        self.setSceneRect(0, 0, self.width(), self.height())
         
         self.centerOn(0, 0)
         
@@ -48,11 +48,5 @@ class BaseGraphView(widg.QGraphicsView):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        self.setDragMode(widg.QGraphicsView.DragMode.RubberBandDrag)
-        
-    def mouseReleaseEvent(self, event):
-        super().mouseReleaseEvent(event)
-        self.setDragMode(widg.QGraphicsView.DragMode.NoDrag)
+
         
