@@ -1,45 +1,3 @@
-# from PySide6.QtGui import QIcon, QPainter
-# from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QHBoxLayout, QWidget, QLabel, QVBoxLayout, QComboBox, QGraphicsView, QGraphicsScene, QMainWindow, QGraphicsProxyWidget
-# from PySide6.QtCore import Qt, QPointF
-
-# from model import GraphModel
-# from viewmodel import GraphViewModel
-# from view import GraphView
-# from UI.graph import GraphInfoWidget
-
-# from config import (
-#     WINDOW_ICON_PATH, WINDOW_TITLE,
-#     WINDOW_WIDTH, WINDOW_HEIGHT
-# )
-
-# import sys
-
-# class MainWindow(QMainWindow):
-#     def __init__(self, witdh: float, height: float, app: QApplication):
-#         super().__init__()
-#         self.setWindowTitle(WINDOW_TITLE)
-#         self.setWindowIcon(QIcon(WINDOW_ICON_PATH))      
-#         self.resize(witdh, height)
-        
-        
-#         main_widget = QWidget()
-#         main_layout = QHBoxLayout(main_widget)
-#         self.setCentralWidget(main_widget)
-
-#         main_layout = QHBoxLayout()
-#         main_widget.setLayout(main_layout)
-
-#         graph_model = GraphModel()
-#         graph_viewmodel = GraphViewModel(graph_model, app)
-#         self.graph_view = GraphView(graph_viewmodel, parent=self)
-#         main_layout.addWidget(self.graph_view)
-        
-#         self.graph_info_widget = GraphInfoWidget("Graph", WINDOW_WIDTH / 4, WINDOW_HEIGHT * 0.5)
-#         self.graph_info_widget.setParent(self) 
-#         self.graph_info_widget.move(WINDOW_WIDTH * 0.9, 10)
-#         self.graph_info_widget.show()
-
-
 import PySide6.QtWidgets as widg
 import PySide6.QtCore as core
 import PySide6.QtGui as gui
@@ -56,6 +14,10 @@ class MainWindow(widg.QMainWindow):
         self.setWindowIcon(gui.QIcon(conf.WINDOW_ICON_PATH))
         self.resize(conf.WINDOW_WIDTH, conf.WINDOW_HEIGHT)
         
+        self._setup_ui()
+        self._setup_controllers()
+    
+    def _setup_ui(self):
         self.setStyleSheet("QMainWindow {background-color: #1e1e1e;}")
         
         main_widget = widg.QWidget()
@@ -63,21 +25,30 @@ class MainWindow(widg.QMainWindow):
         layout = widg.QHBoxLayout(main_widget)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
-
-        self.stack = widg.QStackedWidget()
-        self.__init_controllers()
         
-        for view in self.views:
-            self.stack.addWidget(view)
-
+        self.stack = widg.QStackedWidget()
         layout.addWidget(self.stack)
         
         self.console = ConsoleMenu()
         self.console.setFixedWidth(conf.MENU_WIDTH)
-        self.console.page_combo.currentIndexChanged.connect(self.change_page)
-        self.console.page_combo.currentIndexChanged.connect(self.console.update_visible_fields)
         layout.addWidget(self.console)
         
+    def _setup_controllers(self):
+        self.models = [GraphModel(), GraphModel()]
+        self.views = [ GraphView(is_directed=False), GraphView(is_directed=True)]
+        
+        for view in self.views:
+            self.stack.addWidget(view)
+        
+        self.controllers = [
+            GraphController(model, view) 
+            for model, view in zip(self.models, self.views)
+        ]
+        
+        self.console.page_combo.currentIndexChanged.connect(self.change_page)
+        self.console.page_combo.currentIndexChanged.connect(
+            self.console.update_visible_fields
+        )
 
     def change_page(self, index):
         self.stack.setCurrentIndex(index)
@@ -87,23 +58,42 @@ class MainWindow(widg.QMainWindow):
             self.close()
 
         super().keyPressEvent(event)
-        
-    def __init_controllers(self):
-        self.models = [
-            GraphModel(),
-            GraphModel()
-        ]
-        
-        self.views = [
-            GraphView(is_directed=False),
-            GraphView(is_directed=True),
-        ]
-        
-        self.controllers = [GraphController(model, view) for model, view in zip(self.models, self.views)]
-        
 
 if __name__ == '__main__':
-    app = widg.QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
+    import traceback
+    import logging
+    import faulthandler
+    
+    faulthandler.enable()
+
+    logging.basicConfig(
+        filename="app_crash.log", 
+        level=logging.DEBUG, 
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+    def message_handler(mode, context, message):
+        log_message = f"{mode}: {message}"
+        print(log_message)
+        logging.debug(log_message)
+
+    core.qInstallMessageHandler(message_handler)
+
+    if not widg.QApplication.instance():
+        app = widg.QApplication(sys.argv)
+    else:
+        app = widg.QApplication.instance()
+
+    try:
+        window = MainWindow()
+        window.show()
+        exit_code = app.exec()
+        
+        del window  # Cleanup before exit
+        sys.exit(exit_code)
+
+    except Exception as e:
+        logging.error("Unhandled Exception", exc_info=True)
+        print("An error occurred:", e)
+        traceback.print_exc()
+        sys.exit(1)

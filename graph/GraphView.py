@@ -26,6 +26,7 @@ class GraphView(BaseGraphView):
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
+        clicked_item = self.scene.itemAt(scene_pos, self.scene.views()[0].transform())
         node = self.get_node(scene_pos)
         
         leftClickPressed: bool = event.button() == core.Qt.MouseButton.LeftButton
@@ -33,22 +34,18 @@ class GraphView(BaseGraphView):
         
         if leftClickPressed and self.is_valid_node_pos(scene_pos):
             self.node_added.emit(scene_pos)
-            
+                     
         elif rightClickPressed:
             if self.arc_buffer is None:
                 self.arc_creation_start.emit(node)
+                
             else:
                 self.arc_creation_end.emit(node)
-                
-        print()
-        for item in self.scene.items():
-            print(item)
-            print("miau" if self.arc_buffer is not None else "NONE")
         
-        super().mousePressEvent(event)
-    
+        return super().mousePressEvent(event)
+        
     def mouseMoveEvent(self, event):
-        if self.arc_buffer and self.arc_buffer in self.scene.items():
+        if self.arc_buffer is not None:
             scene_pos = self.mapToScene(event.pos())
             self.arc_buffer.setEndPoint(scene_pos)
         
