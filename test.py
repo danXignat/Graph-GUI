@@ -1,209 +1,64 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsEllipseItem, QGraphicsTextItem
-from PySide6.QtCore import Qt, QPointF, QRectF
-from PySide6.QtGui import QPen, QBrush, QColor, QFont
 import sys
+from PySide6.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsEllipseItem
+from PySide6.QtGui import QPainterPath, QPen, QPainter
+from PySide6.QtCore import Qt, QPointF
 
-class NodeItem(QGraphicsEllipseItem):
-    def __init__(self, x, y, radius, number):
-        super().__init__(-radius, -radius, 2 * radius, 2 * radius)
+class DraggableCircle(QGraphicsEllipseItem):
+    def __init__(self, x, y, radius):
+        super().__init__(0, 0, radius * 2, radius * 2)
         self.setPos(x, y)
-        self.radius = radius
-        self.number = number
-        self.adjacent_edges = []
-        
-        # Make node movable
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges)
-        
-        # Set visual properties
-        self.setBrush(QBrush(QColor(100, 149, 237)))  # Cornflower blue
-        self.setPen(QPen(Qt.black))
-        
-        # Add number label
-        self.label = QGraphicsTextItem(str(number), self)
-        # Center the text
-        text_width = self.label.boundingRect().width()
-        text_height = self.label.boundingRect().height()
-        self.label.setPos(-text_width/2, -text_height/2)
-        self.label.setDefaultTextColor(Qt.white)
-        font = QFont()
-        font.setBold(True)
-        self.label.setFont(font)
+        self.setBrush(Qt.red)
+        self.setFlag(QGraphicsEllipseItem.ItemIsMovable)
+        self.setFlag(QGraphicsEllipseItem.ItemSendsGeometryChanges)
 
     def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange:
-            # Update connected edges when node moves
-            for edge in self.adjacent_edges:
-                edge.update_position()
+        if change == QGraphicsEllipseItem.ItemPositionChange:
+            self.scene().update_arc()  # Notify the scene to update the arc
         return super().itemChange(change, value)
 
-    def center(self):
-        return self.pos()
-
-class EdgeItem(QGraphicsItem):
-    def __init__(self, start_node, end_node=None):
-        super().__init__()
-        self.start_node = start_node
-        self.end_node = end_node
-        self.temp_end = None
-        self.line_color = QColor(105, 105, 105)  # Dim gray
-        
-    def set_temp_end(self, point):
-        self.temp_end = point
-        self.update()
-
-    def set_end_node(self, node):
-        self.end_node = node
-        self.temp_end = None
-        self.update()
-
-    def update_position(self):
-        self.prepareGeometryChange()
-        self.update()
-
-    def boundingRect(self):
-        if self.end_node:
-            p1 = self.start_node.center()
-            p2 = self.end_node.center()
-        elif self.temp_end:
-            p1 = self.start_node.center()
-            p2 = self.temp_end
-        else:
-            return QRectF()
-        
-        # Create a rectangle that encompasses both points
-        x1, y1 = p1.x(), p1.y()
-        x2, y2 = p2.x(), p2.y()
-        return QRectF(min(x1, x2), min(y1, y2),
-                     abs(x2 - x1), abs(y2 - y1))
-
-    def paint(self, painter, option, widget):
-        if self.end_node:
-            start = self.start_node.center()
-            end = self.end_node.center()
-        elif self.temp_end:
-            start = self.start_node.center()
-            end = self.temp_end
-        else:
-            return
-
-        pen = QPen(self.line_color, 2)
-        painter.setPen(pen)
-        painter.drawLine(start, end)
-
-class GraphScene(QGraphicsScene):
+class ArcScene(QGraphicsScene):
     def __init__(self):
         super().__init__()
-        self.nodes = []
-        self.edges = []
-        self.temp_edge = None
-        self.node_radius = 20
-        self.node_counter = 1
-        
-        # Set scene size
-        self.setSceneRect(0, 0, 800, 600)
+        self.circle1 = DraggableCircle(100, 100, 20)  # First circle
+        self.circle2 = DraggableCircle(300, 100, 20)  # Second circle
+        self.addItem(self.circle1)
+        self.addItem(self.circle2)
 
-    def mousePressEvent(self, event):
-        pos = event.scenePos()
-        
-        # Left click: Add node
-        if event.button() == Qt.LeftButton and not self.itemAt(pos, self.views()[0].transform()):
-            self.add_node(pos.x(), pos.y())
-            
-        # Right click: Start/end edge drawing
-        elif event.button() == Qt.RightButton:
-            clicked_item = self.itemAt(pos, self.views()[0].transform())
-            
-            if isinstance(clicked_item, NodeItem) or isinstance(clicked_item, QGraphicsTextItem):
-                if isinstance(clicked_item, QGraphicsTextItem):
-                    clicked_item = clicked_item.parentItem()
-                
-                if not self.temp_edge:
-                    # Start drawing edge
-                    self.temp_edge = EdgeItem(clicked_item)
-                    self.addItem(self.temp_edge)
-                    self.temp_edge.set_temp_end(pos)
-                else:
-                    # Complete edge
-                    if clicked_item != self.temp_edge.start_node:
-                        edge = EdgeItem(self.temp_edge.start_node, clicked_item)
-                        self.edges.append(edge)
-                        self.addItem(edge)
-                        edge.start_node.adjacent_edges.append(edge)
-                        edge.end_node.adjacent_edges.append(edge)
-                    
-                    # Clean up temp edge
-                    self.removeItem(self.temp_edge)
-                    self.temp_edge = None
-            else:
-                # Cancel edge creation if clicking empty space
-                if self.temp_edge:
-                    self.removeItem(self.temp_edge)
-                    self.temp_edge = None
+    def drawBackground(self, painter, rect):
+        super().drawBackground(painter, rect)
 
-        # Middle button: Delete node and connected edges
-        elif event.button() == Qt.MiddleButton:
-            clicked_item = self.itemAt(pos, self.views()[0].transform())
-            if isinstance(clicked_item, NodeItem) or isinstance(clicked_item, QGraphicsTextItem):
-                if isinstance(clicked_item, QGraphicsTextItem):
-                    clicked_item = clicked_item.parentItem()
-                self.delete_node(clicked_item)
+        # Get the centers of the two circles
+        center1 = self.circle1.sceneBoundingRect().center()
+        center2 = self.circle2.sceneBoundingRect().center()
 
-    def mouseMoveEvent(self, event):
-        if self.temp_edge:
-            pos = event.scenePos()
-            # Check if mouse is over a node for snapping
-            item = self.itemAt(pos, self.views()[0].transform())
-            if isinstance(item, NodeItem) or isinstance(item, QGraphicsTextItem):
-                if isinstance(item, QGraphicsTextItem):
-                    item = item.parentItem()
-                if item != self.temp_edge.start_node:
-                    self.temp_edge.set_temp_end(item.center())
-                else:
-                    self.temp_edge.set_temp_end(pos)
-            else:
-                self.temp_edge.set_temp_end(pos)
+        # Define control points for the Bézier curve
+        control_point1 = QPointF((center1.x() + center2.x()) / 2, center1.y())
+        control_point2 = QPointF((center1.x() + center2.x()) / 2, center2.y())
 
-    def add_node(self, x, y):
-        node = NodeItem(x, y, self.node_radius, self.node_counter)
-        self.nodes.append(node)
-        self.addItem(node)
-        self.node_counter += 1
+        # Create the Bézier curve path
+        path = QPainterPath()
+        path.moveTo(center1)
+        path.cubicTo(control_point1, control_point2, center2)
 
-    def delete_node(self, node):
-        # Remove all edges connected to this node
-        edges_to_remove = node.adjacent_edges.copy()
-        for edge in edges_to_remove:
-            self.edges.remove(edge)
-            self.removeItem(edge)
-            if edge in edge.start_node.adjacent_edges:
-                edge.start_node.adjacent_edges.remove(edge)
-            if edge in edge.end_node.adjacent_edges:
-                edge.end_node.adjacent_edges.remove(edge)
-        
-        # Remove the node
-        self.nodes.remove(node)
-        self.removeItem(node)
+        # Draw the Bézier curve
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(QPen(Qt.blue, 3))
+        painter.drawPath(path)
 
-class GraphWindow(QMainWindow):
+    def update_arc(self):
+        self.update()  # Redraw the scene
+
+class MyApp(QGraphicsView):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Graph Editor")
-        
-        # Create and set up the graphics view
-        self.view = QGraphicsView()
-        self.scene = GraphScene()
-        self.view.setScene(self.scene)
-        
-        # Set the view as the central widget
-        self.setCentralWidget(self.view)
-        self.resize(800, 600)
+        self.scene = ArcScene()
+        self.setScene(self.scene)
+        self.setRenderHint(QPainter.Antialiasing)
+        self.setFixedSize(500, 300)
+        self.setSceneRect(0, 0, 500, 300)
 
-def main():
+if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = GraphWindow()
-    window.show()
+    view = MyApp()
+    view.show()
     sys.exit(app.exec())
-
-if __name__ == "__main__":
-    main()

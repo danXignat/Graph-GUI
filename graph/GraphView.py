@@ -18,9 +18,9 @@ class GraphView(BaseGraphView):
     def __init__(self, is_directed: bool):
         super().__init__()
         
-        self.is_directed = is_directed
-        self.nodes: list[NodeView] = []
-        self.arcs: list[ArcView] = []
+        self.is__directed = is_directed
+        self.nodes: dict[NodeView] = {}
+        self.arcs: dict[ArcView] = {}
         
         self.arc_buffer = None
 
@@ -76,8 +76,18 @@ class GraphView(BaseGraphView):
         del temp_circle
         
         return len(colliding_items) == 0
+    
+    def set_node_color(self, node_label: str, color):
+        self.nodes[node_label].set_color(color)
+        
+    def set_node_colors(self, color = core.Qt.GlobalColor.blue):
+        for node in self.nodes.values():
+            node.set_color(color)
             
-                
+        for arc in self.arcs.values():
+            arc.color = "blue"
+            arc.update()
+
     
 
     

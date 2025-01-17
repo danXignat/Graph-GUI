@@ -73,10 +73,9 @@ class NodeView(core.QObject, widg.QGraphicsItem):
         if self.is_moving:
             self.is_moving = False
             self.unsetCursor()
-            
         self.setScale(1)
         self.setZValue(1)
-        
+        print(self.pos())
         return super().mouseReleaseEvent(event)
     
     #-------------------------------Hover------------------------------------
@@ -115,3 +114,9 @@ class NodeView(core.QObject, widg.QGraphicsItem):
         if not colliding_items:
             self.setPos(new_pos)
             self.is_moving = True    
+            
+    def set_color(self, color):
+        brush = gui.QBrush(color)
+        
+        self.circle.setBrush(brush)
+        self.circle.update()

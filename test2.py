@@ -1,36 +1,61 @@
-from PySide6.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QGraphicsEllipseItem
-from PySide6.QtCore import Qt
-import sys
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QPushButton, QDialog,
+    QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QDialogButtonBox
+)
 
-class CustomGraphicsView(QGraphicsView):
+
+class InputDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Input Dialog")
+
+        # Layouts
+        layout = QVBoxLayout(self)
+
+        # Input for first value
+        self.label1 = QLabel("Enter first value:")
+        self.input1 = QLineEdit(self)
+        layout.addWidget(self.label1)
+        layout.addWidget(self.input1)
+
+        # Input for second value
+        self.label2 = QLabel("Enter second value:")
+        self.input2 = QLineEdit(self)
+        layout.addWidget(self.label2)
+        layout.addWidget(self.input2)
+
+        # OK and Cancel buttons
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        layout.addWidget(self.buttonBox)
+
+    def get_inputs(self):
+        return self.input1.text(), self.input2.text()
+
+
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.scene = QGraphicsScene(self)
-        self.setScene(self.scene)
-        self.item = None  # Initially, no item
+        self.setWindowTitle("Main Window")
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:  # Create item on left click
-            self.create_item(event.pos())
-        elif event.button() == Qt.RightButton:  # Delete item on right click
-            self.delete_item(event.pos())
+        # Button to open dialog
+        self.button = QPushButton("Open Input Dialog")
+        self.button.clicked.connect(self.open_dialog)
 
-    def create_item(self, pos):
-        """Creates a QGraphicsEllipseItem at the clicked position."""
-        if self.item is None:
-            scene_pos = self.mapToScene(pos)  # Convert view coordinates to scene coordinates
-            self.item = QGraphicsEllipseItem(scene_pos.x(), scene_pos.y(), 50, 50)
-            self.scene.addItem(self.item)
+        self.setCentralWidget(self.button)
 
-    def delete_item(self, pos):
-        """Deletes the item if the right-click happens inside it."""
-        if self.item and self.item.contains(self.mapToScene(pos)):
-            self.scene.removeItem(self.item)
-            del self.item
-            self.item = None
+    def open_dialog(self):
+        dialog = InputDialog(self)
+        if dialog.exec():  # If the dialog is accepted
+            value1, value2 = dialog.get_inputs()
+            print(f"Value 1: {value1}, Value 2: {value2}")
+        else:
+            print("Dialog canceled.")
 
-# Main Application
-app = QApplication(sys.argv)
-view = CustomGraphicsView()
-view.show()
-sys.exit(app.exec())
+
+if __name__ == "__main__":
+    app = QApplication([])
+    window = MainWindow()
+    window.show()
+    app.exec()

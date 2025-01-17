@@ -4,6 +4,9 @@ import PySide6.QtGui as gui
 import config as conf
 import sys
 
+from icecream import ic
+from functools import partial
+
 from UI.ConsoleMenu import *
 from graph import *
 
@@ -12,10 +15,11 @@ class MainWindow(widg.QMainWindow):
         super().__init__()
         self.setWindowTitle(conf.WINDOW_TITLE)
         self.setWindowIcon(gui.QIcon(conf.WINDOW_ICON_PATH))
-        self.resize(conf.WINDOW_WIDTH, conf.WINDOW_HEIGHT)
+        self.resize(1920, 1080)
         
         self._setup_ui()
         self._setup_controllers()
+        self._setup_connections()
     
     def _setup_ui(self):
         self.setStyleSheet("QMainWindow {background-color: #1e1e1e;}")
@@ -34,66 +38,70 @@ class MainWindow(widg.QMainWindow):
         layout.addWidget(self.console)
         
     def _setup_controllers(self):
-        self.models = [GraphModel(), GraphModel()]
-        self.views = [ GraphView(is_directed=False), GraphView(is_directed=True)]
+        self.models = [GraphModel(is_directed=False), GraphModel(is_directed=True), GraphModel(is_directed=False)]
+        self.views =  [GraphView(is_directed=False), GraphView(is_directed=True), BigGraphView()]
         
         for view in self.views:
             self.stack.addWidget(view)
         
-        self.controllers = [
-            GraphController(model, view) 
-            for model, view in zip(self.models, self.views)
-        ]
+        self.controllers = []
+        for index, (model, view) in enumerate(zip(self.models, self.views)):
+            if index == 2:
+                self.controllers.append(BigGraphController(model, view))
+            else:
+                self.controllers.append(GraphController(model, view))
+                
+    def _setup_connections(self):
+        self.console.page_combo.currentIndexChanged.connect(lambda index: self.stack.setCurrentIndex(index))
+        self.console.weight_added.connect(self.add_weights_handler)
         
-        self.console.page_combo.currentIndexChanged.connect(self.change_page)
-        self.console.page_combo.currentIndexChanged.connect(
-            self.console.update_visible_fields
-        )
-
-    def change_page(self, index):
-        self.stack.setCurrentIndex(index)
-
+        
+        for controller, page_group in zip(self.controllers, self.console.page_groups):
+            if "algorithm" in page_group:            
+                algo_group = page_group["algorithm"]
+                
+                algo_group["start_button"].clicked.connect(
+                    lambda _, c=controller, g=algo_group: 
+                        c.start_algorithm(g["selected_algo"].currentText(), g["start_node"].text())
+                )
+                if isinstance(controller, BigGraphController):
+                    algo_group["reset_colors"].clicked.connect(
+                        lambda _, c=controller, g=algo_group:
+                            c.reset()
+                    )
+                else:               
+                    algo_group["reset_colors"].clicked.connect(
+                        lambda _, c=controller, g=algo_group:
+                            c.view.set_node_colors()
+                    )
+    
+    def change_algo(self, name):
+        index = self.stack.currentIndex()
+        self.controllers[index].current_algo = name
+        
     def keyPressEvent(self, event: gui.QKeyEvent):
-        if event.key() == core.Qt.Key_Escape:
-            self.close()
+        match event.key() :
+            case core.Qt.Key_Escape:
+                self.close()
+                
+            case core.Qt.Key_R:
+                index = self.stack.currentIndex()
+                print(self.models[index])
+                
+            case core.Qt.Key_M:
+                print(self.stack.currentIndex())
 
         super().keyPressEvent(event)
 
-if __name__ == '__main__':
-    import traceback
-    import logging
-    import faulthandler
-    
-    faulthandler.enable()
-
-    logging.basicConfig(
-        filename="app_crash.log", 
-        level=logging.DEBUG, 
-        format="%(asctime)s - %(levelname)s - %(message)s"
-    )
-
-    def message_handler(mode, context, message):
-        log_message = f"{mode}: {message}"
-        print(log_message)
-        logging.debug(log_message)
-
-    core.qInstallMessageHandler(message_handler)
-
-    if not widg.QApplication.instance():
-        app = widg.QApplication(sys.argv)
-    else:
-        app = widg.QApplication.instance()
-
-    try:
-        window = MainWindow()
-        window.show()
-        exit_code = app.exec()
+    def add_weights_handler(self, start_node, end_node, weight):
+        index = self.stack.currentIndex()
         
-        del window  # Cleanup before exit
-        sys.exit(exit_code)
+        self.controllers[index].add_weight(start_node, end_node, weight)
+    
+if __name__ == '__main__':
+    app = widg.QApplication(sys.argv)
 
-    except Exception as e:
-        logging.error("Unhandled Exception", exc_info=True)
-        print("An error occurred:", e)
-        traceback.print_exc()
-        sys.exit(1)
+    window = MainWindow()
+    window.show()
+    
+    sys.exit(app.exec())

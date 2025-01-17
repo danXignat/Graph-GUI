@@ -14,7 +14,7 @@ class Circle(QGraphicsEllipseItem):
         pen.setWidth(4)
         self.setPen(pen)
 
-        brush = QBrush(Qt.GlobalColor.blue)
+        brush = QBrush("#0804F7")
         self.setBrush(brush)
 
         

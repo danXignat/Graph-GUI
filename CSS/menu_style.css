@@ -1,41 +1,48 @@
+/* menu_style.css */
 #consoleMenu {
     background-color: #2b2b2b;
     border: 2px solid #00A800;
     border-radius: 10px;
-    margin: 20px;
+    margin: 10px;
+    max-width: 300px;  /* Limit the overall width */
 }
 
 #fieldGroup {
     background-color: #323232;
     border: 2px solid #00A800;
     border-radius: 8px;
-    padding: 10px;
-    margin-top: 5px;
-    margin-bottom: 5px;
+    padding: 8px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    max-width: 280px;  /* Slightly smaller than parent */
 }
 
 #groupTitle {
     color: white;
-    font-size: 14px;
+    font-size: 12px;  /* Slightly smaller font */
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 #fieldLabel {
     color: white;
     font-weight: bold;
     font-family: "Verdana";
+    font-size: 11px;  /* Smaller font */
+    margin-right: 5px;
 }
 
 #fieldInput {
     background-color: #404040;
     color: white;
     border: 1px solid #00A800;
-    border-radius: 5px;
-    padding: 5px;
-    min-width: 80px;
-    max-width: 160px;
+    border-radius: 4px;
+    padding: 3px;
+    min-width: 60px;  /* Smaller min-width */
+    max-width: 120px; /* Smaller max-width */
+    min-height: 18px; /* Slightly smaller height */
     font-family: "Verdana";
+    font-size: 11px;
 }
 
 #fieldInput:hover {
@@ -52,10 +59,12 @@ QComboBox {
     background-color: #404040;
     color: white;
     border: 1px solid #00A800;
-    border-radius: 5px;
-    padding: 5px;
-    min-width: 80px;
+    border-radius: 4px;
+    padding: 3px;
+    min-width: 60px;
     max-width: 120px;
+    font-size: 11px;
+    height: 20px;
 }
 
 QComboBox:hover {
@@ -65,16 +74,18 @@ QComboBox:hover {
 
 QComboBox::drop-down {
     border: none;
-    width: 20px;
+    width: 16px;  /* Smaller dropdown button */
 }
+
 QComboBox::down-arrow {
-    height: 12px;
+    height: 10px;  /* Smaller arrow */
     border: none;
     background: none;
     image: url("static/drop_arrow.png");
 }
+
 QComboBox::down-arrow:hover {
-    border-top: 5px solid #00FF00;
+    border-top: 4px solid #00FF00;
 }
 
 QComboBox QAbstractItemView {
@@ -82,4 +93,15 @@ QComboBox QAbstractItemView {
     color: white;
     border: 1px solid #00A800;
     selection-background-color: #00A800;
+    font-size: 11px;
+}
+
+/* Additional classes for compact layout */
+.compact-form {
+    spacing: 4px;  /* Reduced spacing */
+}
+
+.compact-layout {
+    margin: 0;
+    padding: 0;
 }

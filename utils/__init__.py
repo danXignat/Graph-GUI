@@ -1,0 +1,1 @@
+from .color import get_random_color
